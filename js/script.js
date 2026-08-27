@@ -30,6 +30,7 @@
   document.getElementById("toStep5").addEventListener("click", () => {
     fillSummary();
     goToStep(5);
+    sendToTelegram();
   });
 
   /* ---------- screen 1: yes / runaway no ---------- */
@@ -187,8 +188,6 @@
     `;
   }
 
-  const MY_EMAIL = "rastischkabolschoyo@gmail.com";
-
   function buildSummaryText() {
     const dateText = state.date ? formatDateRu(state.date) : "не выбрана";
     const timeText = state.time || "не выбрано";
@@ -204,16 +203,51 @@
     ].join("\n");
   }
 
-  /* ---------- screen 5: send / copy ---------- */
-  const sendMailBtn = document.getElementById("sendMailBtn");
+  /* ---------- screen 5: automatic Telegram delivery ----------
+     1) Message @BotFather in Telegram, send /newbot, follow the steps —
+        you get a token like "123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".
+     2) Open a chat with your new bot and send it any message (e.g. "hi").
+     3) Open in a browser: https://api.telegram.org/bot<TOKEN>/getUpdates
+        and copy the number after "chat":{"id": — that's your CHAT_ID.
+     4) Paste both values below. */
+  const TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN";
+  const TELEGRAM_CHAT_ID = "YOUR_CHAT_ID";
+
+  const sendStatus = document.getElementById("sendStatus");
+
+  async function sendToTelegram() {
+    if (!TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN === "YOUR_BOT_TOKEN") {
+      sendStatus.innerHTML = "Автоотправка не настроена — скопируй текст вручную";
+      sendStatus.className = "send-status error";
+      return;
+    }
+
+    sendStatus.innerHTML = '<span class="spinner"></span> Отправляю тебе весточку...';
+    sendStatus.className = "send-status";
+
+    try {
+      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: buildSummaryText(),
+        }),
+      });
+      if (!res.ok) throw new Error("telegram request failed");
+
+      sendStatus.textContent = "Отправлено ✓";
+      sendStatus.className = "send-status ok";
+    } catch (err) {
+      sendStatus.textContent = "Не отправилось — скопируй текст вручную";
+      sendStatus.className = "send-status error";
+    }
+  }
+
+  /* ---------- screen 5: copy fallback ---------- */
   const copyBtn = document.getElementById("copyBtn");
   const copyFeedback = document.getElementById("copyFeedback");
-
-  sendMailBtn.addEventListener("click", () => {
-    const subject = encodeURIComponent("Ответ на приглашение 💌");
-    const body = encodeURIComponent(buildSummaryText());
-    window.location.href = `mailto:${MY_EMAIL}?subject=${subject}&body=${body}`;
-  });
 
   let feedbackTimer = null;
 

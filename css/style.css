@@ -339,6 +339,40 @@ h2 {
   }
 }
 
+/* ---------- send status (screen 5) ---------- */
+.send-status {
+  margin: 14px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--plum-soft);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.send-status.ok {
+  color: var(--rose-600);
+}
+
+.send-status.error {
+  color: #b04a5a;
+}
+
+.send-status .spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--rose-100);
+  border-top-color: var(--rose-500);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ---------- send actions (screen 5) ---------- */
 .send-actions {
   width: 100%;
@@ -346,11 +380,7 @@ h2 {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  margin-top: 18px;
-}
-
-.send-actions .btn-primary {
-  margin-top: 0;
+  margin-top: 10px;
 }
 
 .btn-secondary {
