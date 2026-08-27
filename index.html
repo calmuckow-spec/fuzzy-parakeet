@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Приглашение на свидание 💌</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="hearts-bg" id="heartsBg" aria-hidden="true"></div>
+
+<main class="card">
+
+  <div class="progress" id="progress" aria-hidden="true">
+    <span class="dot" data-step="1"></span>
+    <span class="dot" data-step="2"></span>
+    <span class="dot" data-step="3"></span>
+    <span class="dot" data-step="4"></span>
+    <span class="dot" data-step="5"></span>
+  </div>
+
+  <!-- Экран 1 -->
+  <section class="screen active" id="screen-1">
+    <div class="badge">💌</div>
+    <h1>Тебе письмо</h1>
+    <p class="subtitle">У меня к тебе один важный вопрос...</p>
+    <h2 class="question">Пойдёшь со мной<br>на свидание?</h2>
+
+    <div class="answer-zone" id="answerZone">
+      <button class="btn btn-yes" id="btnYes" type="button">Да&nbsp;💖</button>
+      <button class="btn btn-no" id="btnNo" type="button">Нет</button>
+    </div>
+    <p class="hint">(можешь попробовать нажать на «нет» 😏)</p>
+  </section>
+
+  <!-- Экран 2 -->
+  <section class="screen" id="screen-2">
+    <div class="emoji-big">🥰</div>
+    <h2>Я и не сомневался!</h2>
+    <p class="subtitle">Знал, что ты согласишься :)</p>
+    <button class="btn btn-primary" id="toStep3" type="button">Дальше →</button>
+  </section>
+
+  <!-- Экран 3 -->
+  <section class="screen" id="screen-3">
+    <div class="emoji-big">📅</div>
+    <h2>Когда встречаемся?</h2>
+    <p class="subtitle">Выбери дату и время, которые тебе удобны</p>
+
+    <div class="field">
+      <label for="dateInput">Дата</label>
+      <input type="date" id="dateInput">
+    </div>
+    <div class="field">
+      <label for="timeInput">Время</label>
+      <input type="time" id="timeInput">
+    </div>
+
+    <button class="btn btn-primary" id="toStep4" type="button" disabled>Дальше →</button>
+  </section>
+
+  <!-- Экран 4 -->
+  <section class="screen" id="screen-4">
+    <div class="emoji-big">🍽️</div>
+    <h2>Чем займёмся?</h2>
+    <p class="subtitle">Можно выбрать сразу несколько вариантов</p>
+
+    <div class="options-grid" id="optionsGrid">
+      <button class="option-card" data-value="Погулять" type="button">
+        <span class="option-emoji">🚶‍♀️</span>
+        <span>Погулять</span>
+      </button>
+      <button class="option-card" data-value="Пицца" type="button">
+        <span class="option-emoji">🍕</span>
+        <span>Пицца</span>
+      </button>
+      <button class="option-card" data-value="Роллы" type="button">
+        <span class="option-emoji">🍣</span>
+        <span>Роллы</span>
+      </button>
+      <button class="option-card" data-value="Хинкали" type="button">
+        <span class="option-emoji">🥟</span>
+        <span>Хинкали</span>
+      </button>
+    </div>
+
+    <button class="btn btn-primary" id="toStep5" type="button" disabled>Дальше →</button>
+  </section>
+
+  <!-- Экран 5 -->
+  <section class="screen" id="screen-5">
+    <div class="emoji-big">💞</div>
+    <h2>Очень скучаю...</h2>
+    <p class="subtitle">Скоро увидимся!</p>
+    <div class="summary" id="summary"></div>
+    <p class="footer-note">Считаю дни до нашей встречи 💌</p>
+  </section>
+
+</main>
+
+<script src="js/script.js"></script>
+</body>
+</html>
