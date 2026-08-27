@@ -39,19 +39,67 @@
 
   btnYes.addEventListener("click", () => goToStep(2));
 
+  const SAFE_MARGIN = 14;
+
+  // negative score = candidate overlaps "yes" (worse the more it overlaps),
+  // positive score = free gap between candidate and "yes" (bigger is better)
+  function clearanceScore(candidate, yesRect) {
+    const inflated = {
+      left: yesRect.left - SAFE_MARGIN,
+      right: yesRect.right + SAFE_MARGIN,
+      top: yesRect.top - SAFE_MARGIN,
+      bottom: yesRect.bottom + SAFE_MARGIN,
+    };
+
+    const dx = Math.max(inflated.left - candidate.right, candidate.left - inflated.right, 0);
+    const dy = Math.max(inflated.top - candidate.bottom, candidate.top - inflated.bottom, 0);
+
+    if (dx > 0 || dy > 0) {
+      return Math.hypot(dx, dy);
+    }
+
+    const xOverlap = Math.min(candidate.right, inflated.right) - Math.max(candidate.left, inflated.left);
+    const yOverlap = Math.min(candidate.bottom, inflated.bottom) - Math.max(candidate.top, inflated.top);
+    return -(xOverlap * yOverlap);
+  }
+
   function moveNoButton() {
     const zoneRect = answerZone.getBoundingClientRect();
     const btnRect = btnNo.getBoundingClientRect();
+    const yesRect = btnYes.getBoundingClientRect();
 
     const maxLeft = Math.max(zoneRect.width - btnRect.width, 0);
     const maxTop = Math.max(zoneRect.height - btnRect.height, 0);
 
-    const left = Math.random() * maxLeft;
-    const top = Math.random() * maxTop;
+    // yes-button rect translated into the zone's own coordinate space
+    const yesInZone = {
+      left: yesRect.left - zoneRect.left,
+      right: yesRect.right - zoneRect.left,
+      top: yesRect.top - zoneRect.top,
+      bottom: yesRect.bottom - zoneRect.top,
+    };
+
+    // sample several random spots and keep the one with the best clearance
+    // from "yes" — guarantees a non-overlapping spot whenever one exists
+    let bestLeft = 0;
+    let bestTop = 0;
+    let bestScore = -Infinity;
+
+    for (let i = 0; i < 20; i++) {
+      const left = Math.random() * maxLeft;
+      const top = Math.random() * maxTop;
+      const candidate = { left, right: left + btnRect.width, top, bottom: top + btnRect.height };
+      const score = clearanceScore(candidate, yesInZone);
+      if (score > bestScore) {
+        bestScore = score;
+        bestLeft = left;
+        bestTop = top;
+      }
+    }
 
     btnNo.style.position = "absolute";
-    btnNo.style.left = `${left}px`;
-    btnNo.style.top = `${top}px`;
+    btnNo.style.left = `${bestLeft}px`;
+    btnNo.style.top = `${bestTop}px`;
   }
 
   // place it inside the zone from the start so it can safely dodge
@@ -138,6 +186,53 @@
       <div>💫 Планы: <strong>${activitiesText}</strong></div>
     `;
   }
+
+  const MY_EMAIL = "rastischkabolschoyo@gmail.com";
+
+  function buildSummaryText() {
+    const dateText = state.date ? formatDateRu(state.date) : "не выбрана";
+    const timeText = state.time || "не выбрано";
+    const activitiesText = state.activities.length
+      ? state.activities.join(", ")
+      : "не выбраны";
+
+    return [
+      "Она согласна на свидание! 💌",
+      `Дата: ${dateText}`,
+      `Время: ${timeText}`,
+      `Планы: ${activitiesText}`,
+    ].join("\n");
+  }
+
+  /* ---------- screen 5: send / copy ---------- */
+  const sendMailBtn = document.getElementById("sendMailBtn");
+  const copyBtn = document.getElementById("copyBtn");
+  const copyFeedback = document.getElementById("copyFeedback");
+
+  sendMailBtn.addEventListener("click", () => {
+    const subject = encodeURIComponent("Ответ на приглашение 💌");
+    const body = encodeURIComponent(buildSummaryText());
+    window.location.href = `mailto:${MY_EMAIL}?subject=${subject}&body=${body}`;
+  });
+
+  let feedbackTimer = null;
+
+  function showCopyFeedback(text) {
+    copyFeedback.textContent = text;
+    copyFeedback.classList.add("visible");
+    clearTimeout(feedbackTimer);
+    feedbackTimer = setTimeout(() => copyFeedback.classList.remove("visible"), 2500);
+  }
+
+  copyBtn.addEventListener("click", async () => {
+    const text = buildSummaryText();
+    try {
+      await navigator.clipboard.writeText(text);
+      showCopyFeedback("Скопировано ✓ — вставь в сообщение мне");
+    } catch (err) {
+      showCopyFeedback("Не удалось скопировать, выдели текст вручную");
+    }
+  });
 
   /* ---------- floating hearts background ---------- */
   const heartsBg = document.getElementById("heartsBg");

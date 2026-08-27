@@ -223,7 +223,7 @@ h2 {
 .answer-zone {
   position: relative;
   width: 100%;
-  height: 170px;
+  height: 210px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -320,6 +320,61 @@ h2 {
   border-color: var(--rose-500);
   background: var(--rose-100);
   color: var(--rose-600);
+}
+
+/* ---------- corgi (screen 5) ---------- */
+.corgi {
+  width: 110px;
+  height: auto;
+  margin: 2px 0 10px;
+  animation: corgiBreathe 2.6s ease-in-out infinite;
+}
+
+@keyframes corgiBreathe {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.02);
+  }
+}
+
+/* ---------- send actions (screen 5) ---------- */
+.send-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.send-actions .btn-primary {
+  margin-top: 0;
+}
+
+.btn-secondary {
+  width: 100%;
+  background: var(--bg-1);
+  color: var(--rose-600);
+  border: 2px solid var(--rose-100);
+}
+
+.btn-secondary:hover {
+  border-color: var(--rose-400);
+}
+
+.copy-feedback {
+  min-height: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rose-600);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.copy-feedback.visible {
+  opacity: 1;
 }
 
 /* ---------- summary (screen 5) ---------- */
