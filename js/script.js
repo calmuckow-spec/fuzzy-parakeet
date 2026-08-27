@@ -211,7 +211,7 @@
         and copy the number after "chat":{"id": — that's your CHAT_ID.
      4) Paste both values below. */
   const TELEGRAM_BOT_TOKEN = "8693500260:AAGbhwfJI546hg_-d51IQqNKm96XPZufIMU";
-  const TELEGRAM_CHAT_ID = "YOUR_CHAT_ID";
+  const TELEGRAM_CHAT_ID = "1038808273";
 
   const sendStatus = document.getElementById("sendStatus");
 
