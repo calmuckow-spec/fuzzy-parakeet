@@ -1,0 +1,178 @@
+.admin-card {
+  max-width: 480px;
+}
+
+.admin-card h1 {
+  font-family: "Nunito", sans-serif;
+  font-size: 22px;
+  color: var(--plum);
+  margin: 0 0 4px;
+}
+
+.admin-note {
+  width: 100%;
+  background: #fff6e6;
+  border: 2px solid #ffe2ad;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #8a6a2e;
+  text-align: left;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+/* ---------- PIN screen ---------- */
+#pinScreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+#pinScreen input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 20px;
+  letter-spacing: 4px;
+  text-align: center;
+  padding: 14px;
+  border-radius: 14px;
+  border: 2px solid var(--rose-100);
+  background: var(--bg-1);
+  outline: none;
+  margin: 16px 0 10px;
+}
+
+#pinScreen input:focus {
+  border-color: var(--rose-400);
+}
+
+.pin-error {
+  min-height: 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #b04a5a;
+}
+
+/* ---------- settings screen ---------- */
+#settingsScreen {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+}
+
+#settingsScreen.visible {
+  display: flex;
+}
+
+.admin-section {
+  width: 100%;
+  margin-bottom: 22px;
+}
+
+.admin-section h2 {
+  font-size: 16px;
+  margin: 0 0 10px;
+  color: var(--rose-600);
+}
+
+.admin-section .hint {
+  margin: -4px 0 12px;
+  text-align: left;
+}
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.activity-row input[type="text"] {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--rose-100);
+  background: var(--bg-1);
+  outline: none;
+}
+
+.activity-row input[type="text"]:focus {
+  border-color: var(--rose-400);
+}
+
+.activity-row .emoji-input {
+  width: 52px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.activity-row .label-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-row .remove-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--rose-100);
+  color: var(--rose-600);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.remove-btn:hover {
+  background: #f5c9d3;
+}
+
+.add-row-btn {
+  border: 2px dashed var(--rose-100);
+  background: none;
+  color: var(--rose-600);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px;
+  width: 100%;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.add-row-btn:hover {
+  border-color: var(--rose-400);
+}
+
+.admin-status {
+  min-height: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.admin-status.ok {
+  color: var(--rose-600);
+}
+
+.admin-status.error {
+  color: #b04a5a;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--plum-soft);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--rose-600);
+}

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Настройки — приглашение на свидание</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<main class="card admin-card">
+
+  <!-- PIN gate -->
+  <section id="pinScreen">
+    <h1>🔒 Настройки сайта</h1>
+    <p class="subtitle">Введи код доступа</p>
+    <input type="password" inputmode="numeric" id="pinInput" placeholder="••••" autocomplete="off">
+    <button class="btn btn-primary" id="pinSubmit" type="button">Войти</button>
+    <p class="pin-error" id="pinError"></p>
+  </section>
+
+  <!-- settings form -->
+  <section id="settingsScreen">
+    <h1>Настройки свидания</h1>
+    <p class="subtitle" style="text-align:left; margin-bottom:16px;">
+      Здесь можно поменять то, что видят гости сайта — сохранится для всех.
+    </p>
+
+    <div class="admin-note" id="notConfiguredNote" style="display:none;">
+      Сохранение ещё не настроено. Чтобы изменения здесь реально применялись
+      на сайте, нужно один раз создать бесплатное хранилище на
+      <strong>jsonbin.io</strong> и вписать его данные в <code>js/config.js</code>
+      (инструкция — прямо в комментарии в начале файла). Пока это не сделано,
+      сайт использует запасные (текущие) значения.
+    </div>
+
+    <div class="admin-section">
+      <h2>Чем можно заняться</h2>
+      <p class="subtitle hint">Эмодзи + название варианта. Можно добавлять и удалять пункты.</p>
+      <div id="activityList"></div>
+      <button class="add-row-btn" id="addActivityBtn" type="button">+ Добавить вариант</button>
+    </div>
+
+    <div class="admin-section">
+      <h2>Куда присылать ответ (Telegram)</h2>
+      <p class="subtitle hint">Токен бота и твой chat_id — как получить, читай в комментарии в js/config.js.</p>
+      <div class="field">
+        <label for="botTokenInput">Bot Token</label>
+        <input type="text" id="botTokenInput" placeholder="123456789:AA...">
+      </div>
+      <div class="field">
+        <label for="chatIdInput">Chat ID</label>
+        <input type="text" id="chatIdInput" placeholder="123456789">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="saveBtn" type="button">Сохранить</button>
+    <p class="admin-status" id="adminStatus"></p>
+
+    <a class="back-link" href="index.html">← Вернуться на сайт</a>
+  </section>
+
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
