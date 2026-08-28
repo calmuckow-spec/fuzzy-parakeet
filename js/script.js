@@ -8,6 +8,10 @@
     activities: [],
   };
 
+  // kicked off immediately so it's usually ready by the time the visitor
+  // reaches screen 4 — falls back to sensible defaults if it isn't
+  const configPromise = window.SiteConfig.loadConfig();
+
   /* ---------- screen navigation ---------- */
   const screens = Array.from(document.querySelectorAll(".screen"));
   const dots = Array.from(document.querySelectorAll(".progress .dot"));
@@ -26,7 +30,11 @@
   goToStep(1);
 
   document.getElementById("toStep3").addEventListener("click", () => goToStep(3));
-  document.getElementById("toStep4").addEventListener("click", () => goToStep(4));
+  document.getElementById("toStep4").addEventListener("click", async () => {
+    goToStep(4);
+    const cfg = await configPromise;
+    renderActivityCards(cfg.activities);
+  });
   document.getElementById("toStep5").addEventListener("click", () => {
     fillSummary();
     goToStep(5);
@@ -146,22 +154,36 @@
   dateInput.addEventListener("change", validateStep3);
   timeInput.addEventListener("change", validateStep3);
 
-  /* ---------- screen 4: activities ---------- */
-  const optionCards = Array.from(document.querySelectorAll(".option-card"));
+  /* ---------- screen 4: activities (rendered from config) ---------- */
+  const optionsGrid = document.getElementById("optionsGrid");
   const toStep5Btn = document.getElementById("toStep5");
+  let activitiesRendered = false;
 
-  optionCards.forEach((card) => {
-    card.addEventListener("click", () => {
-      card.classList.toggle("selected");
-      const value = card.dataset.value;
-      if (card.classList.contains("selected")) {
-        state.activities.push(value);
-      } else {
-        state.activities = state.activities.filter((v) => v !== value);
-      }
-      toStep5Btn.disabled = state.activities.length === 0;
+  function renderActivityCards(activities) {
+    if (activitiesRendered) return;
+    activitiesRendered = true;
+
+    optionsGrid.innerHTML = "";
+    activities.forEach(({ emoji, label }) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "option-card";
+      card.dataset.value = label;
+      card.innerHTML = `<span class="option-emoji">${emoji}</span><span>${label}</span>`;
+
+      card.addEventListener("click", () => {
+        card.classList.toggle("selected");
+        if (card.classList.contains("selected")) {
+          state.activities.push(label);
+        } else {
+          state.activities = state.activities.filter((v) => v !== label);
+        }
+        toStep5Btn.disabled = state.activities.length === 0;
+      });
+
+      optionsGrid.appendChild(card);
     });
-  });
+  }
 
   /* ---------- screen 5: summary ---------- */
   const MONTHS_RU = [
@@ -209,14 +231,19 @@
      2) Open a chat with your new bot and send it any message (e.g. "hi").
      3) Open in a browser: https://api.telegram.org/bot<TOKEN>/getUpdates
         and copy the number after "chat":{"id": — that's your CHAT_ID.
-     4) Paste both values below. */
+     4) Paste both values below. These are only the fallback used when the
+        shared config (js/config.js, editable on admin.html) has none set. */
   const TELEGRAM_BOT_TOKEN = "8693500260:AAGbhwfJI546hg_-d51IQqNKm96XPZufIMU";
   const TELEGRAM_CHAT_ID = "1038808273";
 
   const sendStatus = document.getElementById("sendStatus");
 
   async function sendToTelegram() {
-    if (!TELEGRAM_CHAT_ID || TELEGRAM_CHAT_ID === "YOUR_CHAT_ID") {
+    const cfg = await configPromise;
+    const botToken = (cfg.telegram && cfg.telegram.botToken) || TELEGRAM_BOT_TOKEN;
+    const chatId = (cfg.telegram && cfg.telegram.chatId) || TELEGRAM_CHAT_ID;
+
+    if (!chatId || !botToken) {
       sendStatus.innerHTML = "Автоотправка не настроена — скопируй текст вручную";
       sendStatus.className = "send-status error";
       return;
@@ -226,12 +253,12 @@
     sendStatus.className = "send-status";
 
     try {
-      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+      const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
+          chat_id: chatId,
           text: buildSummaryText(),
         }),
       });
