@@ -16,9 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const floatingCta = document.querySelector(".floating-cta");
-  const hero = document.querySelector(".hero");
+  const landmark = document.querySelector(".vk-profile") || document.querySelector(".hero");
   const toggleFloatingCta = () => {
-    const showAfter = hero.offsetTop + hero.offsetHeight;
+    const showAfter = landmark ? landmark.offsetTop + landmark.offsetHeight : 200;
     floatingCta.classList.toggle("visible", window.scrollY > showAfter);
   };
   toggleFloatingCta();
