@@ -1,13 +1,15 @@
-name: Build Windows executable
+name: Build Windows app and installer
 
-# Builds a self-contained Windows .exe for the ies-generator Tkinter app on
-# a real windows-latest runner (PyInstaller cannot cross-compile, so this
-# has to run on Windows). Trigger it manually from the Actions tab, or just
-# push a change under ies-generator/.
+# Один запуск собирает на настоящем windows-latest раннере:
+#   * портативный IES_Generator.exe одним файлом  -> артефакт IES-Generator-Portable-Windows
+#   * установщик «IES Generator Setup.exe»        -> артефакт IES-Generator-Installer-Windows
+# PyInstaller не умеет кросс-компиляцию, поэтому сборка возможна только на Windows.
+# Запускается вручную со вкладки Actions или пушем в ies-generator/ и installer/.
 on:
   push:
     paths:
       - "ies-generator/**"
+      - "installer/**"
       - ".github/workflows/build-windows.yml"
   workflow_dispatch: {}
 
@@ -16,7 +18,6 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: ies-generator
         shell: pwsh
 
     steps:
@@ -31,7 +32,7 @@ jobs:
       - name: Install project dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r ies-generator/requirements.txt
 
       - name: Install PyInstaller
         run: pip install pyinstaller
@@ -44,49 +45,169 @@ jobs:
           # clear message instead of a confusing PyInstaller error later.
           python -c "import tkinter; import openpyxl; print('tkinter and openpyxl import OK')"
 
-      - name: Build Windows executable with PyInstaller
+      - name: Resolve application version
+        id: version
         run: |
-          $pyinstallerArgs = @(
-            "--onefile",
-            "--windowed",
-            "--clean",
-            "--noconfirm",
-            "--name", "IES_Generator",
-            "--collect-all", "openpyxl"
-          )
+          # Single source of truth: VERSION in ies-generator/ies_app.py.
+          # The same value ends up in the .exe resources and in the installer.
+          $version = python installer/make_version_file.py --out build/version_info.txt --print-version
+          if (-not $version) { throw "Could not read VERSION from ies-generator/ies_app.py" }
+          Write-Host "Application version: $version"
+          "version=$version" >> $env:GITHUB_OUTPUT
 
-          # The current project ships no icon or bundled resources (every
-          # file path in the app is chosen at runtime through dialogs), but
-          # detect them anyway so future assets get packaged automatically
-          # instead of silently missing from the .exe.
-          if (Test-Path "icon.ico") {
-            Write-Host "Found icon.ico - embedding it as the application icon."
-            $pyinstallerArgs += @("--icon", "icon.ico")
-          }
-
-          foreach ($dir in @("assets", "resources", "templates", "data")) {
-            if (Test-Path $dir) {
-              Write-Host "Found resource folder '$dir' - bundling it into the executable."
-              $pyinstallerArgs += @("--add-data", "$dir;$dir")
-            }
-          }
-
-          $pyinstallerArgs += "ies_app.py"
-
-          Write-Host "Running: pyinstaller $($pyinstallerArgs -join ' ')"
-          pyinstaller @pyinstallerArgs
-
-      - name: Verify the executable was produced
+      - name: Ensure application icon
         run: |
-          $exePath = "dist/IES_Generator.exe"
-          if (-not (Test-Path $exePath)) {
-            throw "Build did not produce $exePath"
+          # A real icon.ico committed under installer/ is used as-is. If it is
+          # missing, a documented placeholder is generated so the build never
+          # silently loses the icon of the .exe, installer and shortcuts.
+          if (Test-Path "installer/icon.ico") {
+            Write-Host "Using installer/icon.ico from the repository."
+          } else {
+            Write-Warning "installer/icon.ico not found - generating the placeholder icon."
+            python installer/make_placeholder_icon.py
           }
-          Get-Item $exePath | Format-List Name, Length, FullName
 
-      - name: Upload Windows build artifact
+      - name: Build portable single-file executable
+        run: |
+          # --collect-all openpyxl is more reliable than listing hidden imports
+          # by hand. --windowed keeps the console window hidden (GUI app).
+          pyinstaller --onefile --windowed --clean --noconfirm `
+            --name IES_Generator `
+            --collect-all openpyxl `
+            --icon installer/icon.ico `
+            --version-file build/version_info.txt `
+            --paths ies-generator `
+            --distpath dist/portable `
+            --workpath build/portable `
+            --specpath build/spec-portable `
+            ies-generator/ies_app.py
+
+      - name: Build application folder for the installer
+        run: |
+          # The installer ships the --onedir build: it starts faster than the
+          # single-file variant (no self-extraction on every launch) and is
+          # what the Inno Setup script packages.
+          pyinstaller --onedir --windowed --clean --noconfirm `
+            --name IES_Generator `
+            --collect-all openpyxl `
+            --icon installer/icon.ico `
+            --version-file build/version_info.txt `
+            --paths ies-generator `
+            --distpath dist/app `
+            --workpath build/app `
+            --specpath build/spec-app `
+            ies-generator/ies_app.py
+
+      - name: Verify PyInstaller output
+        run: |
+          foreach ($path in @("dist/portable/IES_Generator.exe",
+                              "dist/app/IES_Generator/IES_Generator.exe")) {
+            if (-not (Test-Path $path)) { throw "Build did not produce $path" }
+            Get-Item $path | Format-List Name, Length, FullName
+          }
+
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup --no-progress -y
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "$env:ProgramFiles\Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found after installing Inno Setup" }
+          Write-Host "Found compiler: $iscc"
+          "ISCC=$iscc" >> $env:GITHUB_ENV
+
+      - name: Compile the Windows installer
+        run: |
+          $appDir = (Resolve-Path "dist/app/IES_Generator").Path
+          $outDir = Join-Path $PWD "dist-installer"
+          & $env:ISCC `
+            "/DAppVersion=${{ steps.version.outputs.version }}" `
+            "/DAppSourceDir=$appDir" `
+            "/DOutputDir=$outDir" `
+            "installer/IES-Generator.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed with exit code $LASTEXITCODE" }
+
+      - name: Verify the installer was produced
+        run: |
+          $setup = "dist-installer/IES Generator Setup.exe"
+          if (-not (Test-Path $setup)) { throw "Installer was not produced at $setup" }
+          Get-Item $setup | Format-List Name, Length, FullName
+
+      - name: Smoke-test the built application
+        run: |
+          # A broken bundle (missing Tcl/Tk, missing openpyxl) exits within
+          # seconds. If the process is still alive, the GUI came up.
+          $exe = (Resolve-Path "dist/app/IES_Generator/IES_Generator.exe").Path
+          $proc = Start-Process -FilePath $exe -WorkingDirectory $env:TEMP -PassThru
+          Start-Sleep -Seconds 15
+          if ($proc.HasExited) {
+            throw "Application exited on its own with code $($proc.ExitCode) - the bundle is broken."
+          }
+          Write-Host "Application is still running after 15 s - Tkinter GUI started correctly."
+          Stop-Process -Id $proc.Id -Force
+
+      - name: Test install and uninstall (spaces and Cyrillic in the path)
+        run: |
+          $setup = (Resolve-Path "dist-installer/IES Generator Setup.exe").Path
+          # Deliberately awkward path: spaces plus Cyrillic characters.
+          $target = "C:\Тестовая папка\IES Generator"
+          $log = Join-Path $PWD "install.log"
+
+          Write-Host "Installing silently into: $target"
+          $proc = Start-Process -FilePath $setup -Wait -PassThru -ArgumentList `
+            "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "`"/DIR=$target`"", "`"/LOG=$log`""
+          if ($proc.ExitCode -ne 0) {
+            if (Test-Path $log) { Get-Content $log -Tail 40 }
+            throw "Installer exited with code $($proc.ExitCode)"
+          }
+
+          foreach ($item in @("$target\IES_Generator.exe",
+                              "$target\_internal",
+                              "$target\Инструкция.md",
+                              "$target\unins000.exe")) {
+            if (-not (Test-Path -LiteralPath $item)) { throw "Missing after install: $item" }
+            Write-Host "  present: $item"
+          }
+
+          # No /TASKS was passed, so this also proves the desktop shortcut is
+          # created by default, and that a per-user install needs no admin.
+          $programs = [Environment]::GetFolderPath('Programs')
+          $desktop = [Environment]::GetFolderPath('Desktop')
+          foreach ($shortcut in @("$programs\IES Generator\IES Generator.lnk",
+                                  "$programs\IES Generator\Инструкция.lnk",
+                                  "$desktop\IES Generator.lnk")) {
+            if (-not (Test-Path -LiteralPath $shortcut)) { throw "Missing shortcut: $shortcut" }
+            Write-Host "  shortcut: $shortcut"
+          }
+
+          Write-Host "Uninstalling silently..."
+          Start-Process -FilePath "$target\unins000.exe" -Wait -ArgumentList `
+            "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"
+
+          # The uninstaller removes itself from a temporary copy, so give it
+          # a moment before checking that the application is really gone.
+          $gone = $false
+          foreach ($attempt in 1..15) {
+            if (-not (Test-Path -LiteralPath "$target\IES_Generator.exe")) { $gone = $true; break }
+            Start-Sleep -Seconds 2
+          }
+          if (-not $gone) { throw "Uninstall left $target\IES_Generator.exe behind" }
+          if (Test-Path -LiteralPath "$desktop\IES Generator.lnk") {
+            throw "Uninstall left the desktop shortcut behind"
+          }
+          Write-Host "Install and uninstall both completed cleanly."
+
+      - name: Upload portable build
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: IES-Generator-Windows
-          path: ies-generator/dist/IES_Generator.exe
+          name: IES-Generator-Portable-Windows
+          path: dist/portable/IES_Generator.exe
+          if-no-files-found: error
+
+      - name: Upload Windows installer
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: IES-Generator-Installer-Windows
+          path: dist-installer/IES Generator Setup.exe
           if-no-files-found: error
