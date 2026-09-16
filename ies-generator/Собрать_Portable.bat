@@ -1,12 +1,18 @@
 @echo off
 setlocal enabledelayedexpansion
 chcp 65001 >nul
-title Сборка IES_Generator.exe
+title Сборка портативной версии IES_Generator
 cd /d "%~dp0"
 
 echo ============================================================
-echo   Сборка программы IES_Generator.exe (один файл)
+echo   Сборка портативной версии (папка, без установки)
 echo ============================================================
+echo.
+echo Этот вариант собирает папку dist\IES_Generator со всеми файлами.
+echo Всю папку можно заархивировать (zip) и передать на другой компьютер:
+echo там её нужно просто распаковать и запустить IES_Generator.exe —
+echo без установки Python и без предупреждений антивируса, характерных
+echo для однофайловой сборки.
 echo.
 
 set PYCMD=
@@ -18,7 +24,6 @@ if not defined PYCMD (
 )
 if not defined PYCMD (
     echo [ОШИБКА] Python не найден.
-    echo.
     echo Установите Python 3.11 или новее с сайта python.org
     echo и обязательно отметьте галочку "Add python.exe to PATH".
     echo.
@@ -28,8 +33,6 @@ if not defined PYCMD (
 
 if not exist "ies_app.py" (
     echo [ОШИБКА] Файл ies_app.py не найден в этой папке.
-    echo Убедитесь, что .bat лежит в той же папке, что и все .py файлы.
-    echo.
     pause
     exit /b 1
 )
@@ -38,7 +41,6 @@ echo [1/4] Установка нужных библиотек...
 %PYCMD% -m pip install --upgrade pip
 %PYCMD% -m pip install --upgrade openpyxl pyinstaller
 if errorlevel 1 (
-    echo.
     echo [ОШИБКА] Не удалось установить библиотеки. Проверьте интернет.
     pause
     exit /b 1
@@ -51,13 +53,12 @@ if exist "dist" rmdir /s /q "dist"
 if exist "IES_Generator.spec" del /q "IES_Generator.spec"
 
 echo.
-echo [3/4] Сборка исполняемого файла (это может занять пару минут)...
-%PYCMD% -m PyInstaller --onefile --windowed --clean --noconfirm ^
+echo [3/4] Сборка портативной папки...
+%PYCMD% -m PyInstaller --onedir --windowed --clean --noconfirm ^
     --name IES_Generator ^
     --collect-all openpyxl ^
     ies_app.py
 if errorlevel 1 (
-    echo.
     echo [ОШИБКА] Сборка не удалась. Скопируйте текст выше и покажите его.
     pause
     exit /b 1
@@ -66,13 +67,11 @@ if errorlevel 1 (
 echo.
 echo [4/4] Готово.
 echo.
-echo Программа лежит здесь:  %CD%\dist\IES_Generator.exe
-echo Этот один файл можно скопировать на любой компьютер с Windows 10/11 —
-echo Python там не нужен.
+echo Портативная версия лежит здесь:  %CD%\dist\IES_Generator\
+echo Запускаемый файл внутри неё:      IES_Generator.exe
 echo.
-echo Если при первом запуске Windows покажет окно
-echo "Windows защитила ваш компьютер" — это стандартное предупреждение
-echo для программ без цифровой подписи, а не ошибка. Нажмите
-echo "Подробнее" -> "Выполнить в любом случае".
+echo Заархивируйте всю папку IES_Generator целиком (не только .exe) —
+echo программе нужны файлы рядом с ней. На другом компьютере: распаковать
+echo и запустить IES_Generator.exe.
 echo.
 pause
