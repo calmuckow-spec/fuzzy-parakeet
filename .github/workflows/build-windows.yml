@@ -1,0 +1,92 @@
+name: Build Windows executable
+
+# Builds a self-contained Windows .exe for the ies-generator Tkinter app on
+# a real windows-latest runner (PyInstaller cannot cross-compile, so this
+# has to run on Windows). Trigger it manually from the Actions tab, or just
+# push a change under ies-generator/.
+on:
+  push:
+    paths:
+      - "ies-generator/**"
+      - ".github/workflows/build-windows.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ies-generator
+        shell: pwsh
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Sanity-check runtime dependencies
+        run: |
+          # tkinter ships with the CPython Windows installer used by
+          # setup-python, so it is never listed in requirements.txt.
+          # openpyxl comes from requirements.txt. Fail fast here with a
+          # clear message instead of a confusing PyInstaller error later.
+          python -c "import tkinter; import openpyxl; print('tkinter and openpyxl import OK')"
+
+      - name: Build Windows executable with PyInstaller
+        run: |
+          $pyinstallerArgs = @(
+            "--onefile",
+            "--windowed",
+            "--clean",
+            "--noconfirm",
+            "--name", "IES_Generator",
+            "--collect-all", "openpyxl"
+          )
+
+          # The current project ships no icon or bundled resources (every
+          # file path in the app is chosen at runtime through dialogs), but
+          # detect them anyway so future assets get packaged automatically
+          # instead of silently missing from the .exe.
+          if (Test-Path "icon.ico") {
+            Write-Host "Found icon.ico - embedding it as the application icon."
+            $pyinstallerArgs += @("--icon", "icon.ico")
+          }
+
+          foreach ($dir in @("assets", "resources", "templates", "data")) {
+            if (Test-Path $dir) {
+              Write-Host "Found resource folder '$dir' - bundling it into the executable."
+              $pyinstallerArgs += @("--add-data", "$dir;$dir")
+            }
+          }
+
+          $pyinstallerArgs += "ies_app.py"
+
+          Write-Host "Running: pyinstaller $($pyinstallerArgs -join ' ')"
+          pyinstaller @pyinstallerArgs
+
+      - name: Verify the executable was produced
+        run: |
+          $exePath = "dist/IES_Generator.exe"
+          if (-not (Test-Path $exePath)) {
+            throw "Build did not produce $exePath"
+          }
+          Get-Item $exePath | Format-List Name, Length, FullName
+
+      - name: Upload Windows build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IES-Generator-Windows
+          path: ies-generator/dist/IES_Generator.exe
+          if-no-files-found: error
